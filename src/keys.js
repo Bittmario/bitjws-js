@@ -1,3 +1,6 @@
+var sjcl = require('sjcl');
+var bitcore = require('bitcore-lib');
+var Mnemonic = require('bitcore-mnemonic');
 
 var WORDSIZE = 4;  /* 32 bits. */
 var ITERCOUNT = 10000;
@@ -152,4 +155,15 @@ function wifToPriv(wif) {
         key: pvKey,
         address: pvKey.publicKey.toAddress().toString(),
     }
+}
+
+
+module.exports = {
+  deriveKeys : deriveKeys,
+  recoverKeys : recoverKeys,
+  keyToBuffer : keyToBuffer,
+  checkBytes : checkBytes,
+  privToWif : privToWif,
+  wifToPriv : wifToPriv,
+  bitcore : bitcore,
 }

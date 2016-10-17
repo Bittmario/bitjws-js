@@ -2,7 +2,7 @@
   "name": "bitjws-js",
   "version": "0.0.4",
   "description": "Bitjws javascript library",
-  "main": "dist/bitjws-js.js",
+  "main": "index.js",
   "scripts": {
     "test": "./node_modules/istanbul/lib/cli.js cover ./node_modules/.bin/_mocha",
     "coverage": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"

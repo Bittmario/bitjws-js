@@ -1,3 +1,7 @@
+var Message = require('bitcore-message');
+var base64url = require('base64-url');
+var stringify = require('json-stable-stringify');
+
 /**
  * Return a JWT header base64url encoded. The keyId is stored in the header
  * and used when verifying the signature.
@@ -86,4 +90,10 @@ function validateDeserialize(url, raw, checkExpiration) {
 
     return {header: header, payload: payload};
 
+}
+
+
+module.exports = {
+  signSerialize : signSerialize,
+  validateDeserialize : validateDeserialize,
 }

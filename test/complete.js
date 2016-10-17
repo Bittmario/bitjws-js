@@ -1,7 +1,5 @@
 var expect = require('chai').expect;
-var bitjws = require('../dist/bitjws-js.js');
-var bitjwsMin = require('../dist/bitjws-js.min.js');
-var bitcore = require('bitcore-lib');
+var bitjws = require('../');
 
 describe('Complete Test', function() {
 
