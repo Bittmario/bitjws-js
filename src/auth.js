@@ -1,5 +1,8 @@
-var Message = require('bitcore-message');
+// var Message = require('bitcore-message');
+var bitcoin = require('bitcoinjs-lib');
 var base64url = require('base64-url');
+var bigi = require('bigi');
+var bitcoinMessage = require('bitcoinjs-message');
 var stringify = require('json-stable-stringify');
 
 /**
@@ -33,22 +36,28 @@ function jwtHeader(keyId) {
 function signSerialize(url, data, key, expTime) {
 
     var exp = (new Date().getTime() / 1000) + 3600;
-    if (expTime && expTime > 0)
+    if (expTime && expTime > 0) {
         exp = (new Date().getTime() / 1000) + expTime;
+    }
 
     var payload = {
         aud : url,
         data : data,
-        exp : exp,
+        exp : Math.floor(Number(+exp) - 0),
         iat : new Date().getTime()
     }
 
     var rawPayload = base64url.encode(stringify(payload));
-    var msg = jwtHeader(key.publicKey.toAddress().toString()) + '.' + rawPayload;
-    var signature = base64url.encode(new Message(msg).sign(key));
+    var msg = jwtHeader(key.getAddress().toString()) + '.' + rawPayload;
 
-    return msg + '.' + signature;
+    var privateKey = key.keyPair.d.toBuffer(32);
+    var messagePrefix = bitcoin.networks.bitcoin.messagePrefix;
 
+    var signature = bitcoinMessage.sign(msg, messagePrefix, privateKey, key.keyPair.compressed)
+    var signatureEncoded = base64url.encode(signature.toString('base64'))
+
+
+    return msg + '.' + signatureEncoded;
 }
 
 
@@ -68,20 +77,22 @@ function validateDeserialize(url, raw, checkExpiration) {
         throw new TypeError("Invalid raw data");
     }
 
-    rawHeader = pieces[0];
-    rawPayload = pieces[1];
-    signature = base64url.decode(pieces[2]);
+    var rawHeader = pieces[0];
+    var rawPayload = pieces[1];
+    var signature = base64url.decode(pieces[2]);
 
-    header = JSON.parse(base64url.decode(rawHeader));
-    key = header.kid;
+    var header = JSON.parse(base64url.decode(rawHeader));
+    var key = header.kid;
+    var messagePrefix = bitcoin.networks.bitcoin.messagePrefix;
+
     if (!key) {
         throw new TypeError("Invalid header, missing key id");
     }
-    if (!(new Message(rawHeader + '.' + rawPayload).verify(key, signature))) {
+    if (!(bitcoinMessage.verify(rawHeader + '.' + rawPayload, messagePrefix, key, signature))) {
         throw new Error("Signature does not match");
     }
 
-    payload = JSON.parse(base64url.decode(rawPayload));
+    var payload = JSON.parse(base64url.decode(rawPayload));
     if (payload.aud !== url) {
         throw new Error("Audience mismatch (" + payload.aud + " != " + url + ")");
     } else if (checkExpiration && ((new Date().getTime() / 1000) > payload.exp)) {

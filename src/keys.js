@@ -1,6 +1,7 @@
 var sjcl = require('sjcl');
-var bitcore = require('bitcore-lib');
-var Mnemonic = require('bitcore-mnemonic');
+var bip39 = require('bip39');
+var bitcoin = require('bitcoinjs-lib');
+var bigInteger = require('bigi');
 
 var WORDSIZE = 4;  /* 32 bits. */
 var ITERCOUNT = 10000;
@@ -36,7 +37,8 @@ function deriveKeys(username, password, iters, salt) {
         iterCount = Math.max(iters, 5000);
     }
     var baseKey = sjcl.misc.pbkdf2(data, rawSalt, iterCount);
-    var words = Mnemonic.fromSeed(keyToBuffer(baseKey), Mnemonic.Words.ENGLISH);
+
+    var words = bip39.entropyToMnemonic(keyToBuffer(baseKey));
 
     var keys = recoverKeys(words);
 
@@ -65,16 +67,19 @@ function deriveKeys(username, password, iters, salt) {
  * @returns {object}
  */
 function recoverKeys(mnemonic) {
-    var words = (mnemonic instanceof Mnemonic) ? mnemonic : Mnemonic(mnemonic);
-    var hdkey = words.toHDPrivateKey();
-    var rawEncKey = hdkey.derive(0, true);
-    var rawSignKey = hdkey.derive(1, true);
-    var rawGenKey = hdkey.derive(2, true);
+    var seed = bip39.mnemonicToSeed(mnemonic, bitcoin.networks.bitcoin);
+    var hdMaster = bitcoin.HDNode.fromSeedBuffer(seed);
 
-    var encKey = sjcl.codec.hex.toBits(rawEncKey.privateKey.bn.toJSON());
-    var signKey = rawSignKey.privateKey;
-    var signAddress = rawSignKey.publicKey.toAddress().toString();
-    var wifKey = rawSignKey.privateKey.toWIF();
+    var rawEncKey = hdMaster.deriveHardened(0);
+    var rawSignKey = hdMaster.deriveHardened(1);
+    var rawGenKey = hdMaster.deriveHardened(2);
+
+    var encKey = sjcl.codec.hex.toBits(rawEncKey.keyPair.d.toHex());
+    var signKey = rawSignKey;
+    var signAddress = rawSignKey.getAddress().toString();
+
+    var wifKey = rawSignKey.keyPair.toWIF();
+
 
     return {
         sign: {
@@ -133,29 +138,29 @@ function checkBytes(data) {
     return check;
 }
 
-/**
- * Returns in wif format the privateKey provided.
- *
- * @param {string} priv
- * @returns {string}
- */
-function privToWif(priv) {
-    return bitcore.PrivateKey(priv).toWIF();
-}
+// /**
+//  * Returns in wif format the privateKey provided.
+//  *
+//  * @param {string} priv
+//  * @returns {string}
+//  */
+// function privToWif(priv) {
+//     return bitcore.PrivateKey(priv).toWIF();
+// }
 
-/**
- * Returns a PrivateKey object from the wif format privateKey provided.
- *
- * @param {string} wif
- * @returns {Object}
- */
-function wifToPriv(wif) {
-    var pvKey = new bitcore.PrivateKey(wif);
-    return {
-        key: pvKey,
-        address: pvKey.publicKey.toAddress().toString(),
-    }
-}
+// /**
+//  * Returns a PrivateKey object from the wif format privateKey provided.
+//  *
+//  * @param {string} wif
+//  * @returns {Object}
+//  */
+// function wifToPriv(wif) {
+//     var pvKey = new bitcore.PrivateKey(wif);
+//     return {
+//         key: pvKey,
+//         address: pvKey.publicKey.toAddress().toString(),
+//     }
+// }
 
 
 module.exports = {
@@ -163,7 +168,7 @@ module.exports = {
   recoverKeys : recoverKeys,
   keyToBuffer : keyToBuffer,
   checkBytes : checkBytes,
-  privToWif : privToWif,
-  wifToPriv : wifToPriv,
-  bitcore : bitcore,
+  // privToWif : privToWif,
+  // wifToPriv : wifToPriv,
+  // bitcore : bitcore,
 }

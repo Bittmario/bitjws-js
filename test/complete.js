@@ -6,13 +6,14 @@ describe('Complete Test', function() {
     var genKey = null;
     var derivedKey = null;
 
-    it("Should generate a pvkey and add his wif key", function(done) {
-        genKey = new bitjws.bitcore.PrivateKey();
-        done();
-    });
+    // it("Should generate a pvkey and add his wif key", function(done) {
+    //     genKey = new bitjws.bitcore.PrivateKey();
+    //     done();
+    // });
 
     it("Should derive a new signature using a username and password", function(done) {
         derivedKey = bitjws.deriveKeys('username1', '123456');
+        genKey = derivedKey.key.sign.key;
         expect(derivedKey).to.have.property('payload');
         expect(derivedKey).to.have.property('key');
         done();
@@ -29,7 +30,7 @@ describe('Complete Test', function() {
         expect(decoded).to.have.property("header");
         expect(decoded).to.have.property("payload");
         expect(decoded.header).to.have.property("kid");
-        expect(decoded.header.kid).to.be.equal(genKey.publicKey.toAddress().toString());
+        expect(decoded.header.kid).to.be.equal(genKey.getAddress().toString());
         expect(decoded.payload).to.have.property("aud");
         expect(decoded.payload.aud).to.be.null;
         expect(decoded.payload).to.have.property("data");
@@ -50,7 +51,7 @@ describe('Complete Test', function() {
         expect(decoded).to.have.property("header");
         expect(decoded).to.have.property("payload");
         expect(decoded.header).to.have.property("kid");
-        expect(decoded.header.kid).to.be.equal(genKey.publicKey.toAddress().toString());
+        expect(decoded.header.kid).to.be.equal(genKey.getAddress().toString());
         expect(decoded.payload).to.have.property("aud");
         expect(decoded.payload.aud).to.be.equal("bitjwsjsisawesome.com");
         expect(decoded.payload).to.have.property("data");
